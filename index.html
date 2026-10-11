@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipsi Pro - AI Video Repurposing Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                        },
+                        dark: {
+                            bg: '#090a0f',
+                            card: '#12151e',
+                            subtle: '#1a1f2c',
+                            border: '#2a3142',
+                            borderHover: '#3e485e'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #090a0f; }
+        ::-webkit-scrollbar-thumb { background: #2a3142; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f97316; }
+
+        /* Animation Keyframes */
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(249, 115, 22, 0.2); }
+            50% { box-shadow: 0 0 35px rgba(249, 115, 22, 0.5); }
+        }
+        .glow-orange { animation: pulseGlow 2.5s infinite ease-in-out; }
+
+        /* Live Preview Caption Styles */
+        .caption-hormozi {
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000, 0px 4px 10px rgba(0,0,0,0.9);
+        }
+        
+        .caption-karaoke span.highlight {
+            background-color: #f97316;
+            color: #ffffff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(249, 115, 22, 0.6);
+            transform: scale(1.05);
+            display: inline-block;
+        }
+
+        .caption-minimal {
+            font-family: 'Inter', sans-serif;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 6px 14px;
+        }
+
+        /* Line clamping for cards */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-slate-200 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-40 bg-dark-card/90 backdrop-blur-md border-b border-dark-border px-4 lg:px-8 py-3 flex items-center justify-between">
+        <!-- Logo & Core Navigation -->
+        <div class="flex items-center space-x-6">
+            <div class="flex items-center space-x-2.5 cursor-pointer" onclick="switchTab('forge')">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-amber-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <span class="text-xl font-black tracking-tight text-white">Clip<span class="text-brand-500">si</span> <span class="text-[10px] px-2 py-0.5 rounded-md bg-brand-500/10 border border-brand-500/30 text-brand-500 font-bold uppercase tracking-wider ml-1">Pro Studio</span></span>
+            </div>
+
+            <!-- Workspace Tabs -->
+            <nav class="hidden md:flex items-center space-x-1 bg-dark-bg p-1 rounded-xl border border-dark-border">
+                <button id="tabBtnForge" onclick="switchTab('forge')" class="px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-brand-500 text-white shadow-md">
+                    ⚡ Clip Forge
+                </button>
+                <button id="tabBtnLibrary" onclick="switchTab('library')" class="px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all text-slate-400 hover:text-white hover:bg-dark-subtle flex items-center gap-1.5">
+                    📁 Saved Clips Library
+                    <span id="libraryBadge" class="bg-dark-border text-slate-300 text-[10px] px-1.5 py-0.2 rounded-full font-black">3</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- User Controls & Credit Status -->
+        <div class="flex items-center space-x-4">
+            <!-- Credit Gauge Widget -->
+            <div class="hidden sm:flex items-center gap-2.5 bg-dark-subtle border border-dark-border px-3.5 py-1.5 rounded-full text-xs">
+                <span class="text-slate-400 font-medium">Credits:</span>
+                <span class="font-bold text-white"><span id="headerCreditsCount">3</span> / 3</span>
+                <div class="w-12 h-1.5 bg-dark-border rounded-full overflow-hidden">
+                    <div id="creditMeterBar" class="h-full bg-brand-500 transition-all duration-300" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- Upgrade Callout -->
+            <button onclick="openModal('pricingModal')" class="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-brand-500/20 flex items-center gap-1.5">
+                <span>⚡ Upgrade Pro</span>
+            </button>
+
+            <!-- User Avatar & Dropdown Menu -->
+            <div class="relative">
+                <button onclick="toggleUserDropdown()" class="flex items-center space-x-2.5 pl-2 border-l border-dark-border focus:outline-none">
+                    <img class="w-8 h-8 rounded-full border border-brand-500/50 object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="User Profile">
+                    <div class="hidden xl:block text-left">
+                        <div class="text-xs font-bold text-white leading-tight">Alex Rivera</div>
+                        <div class="text-[10px] text-brand-500 font-semibold">Creator Pro Plan</div>
+                    </div>
+                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+
+                <!-- Profile Dropdown Popup -->
+                <div id="userDropdown" class="hidden absolute right-0 mt-3 w-56 bg-dark-card border border-dark-border rounded-2xl shadow-2xl py-2 z-50">
+                    <div class="px-4 py-2 border-b border-dark-border">
+                        <p class="text-xs font-bold text-white">Alex Rivera</p>
+                        <p class="text-[10px] text-slate-400 truncate">alex.rivera@creator.io</p>
+                    </div>
+                    <button onclick="openModal('billingModal'); toggleUserDropdown();" class="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-dark-subtle flex items-center gap-2">
+                        💳 Billing & Subscription
+                    </button>
+                    <button onclick="openModal('pricingModal'); toggleUserDropdown();" class="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-dark-subtle flex items-center gap-2">
+                        🚀 Upgrade Creator Tier
+                    </button>
+                    <div class="border-t border-dark-border my-1"></div>
+                    <button onclick="alert('Signed out successfully.')" class="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-dark-subtle flex items-center gap-2">
+                        🚪 Log Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8">
+
+        <!-- ================= TAB 1: CLIP FORGE STUDIO ================= -->
+        <div id="forgeTab" class="space-y-8">
+
+            <!-- Title Header -->
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <h1 class="text-2xl lg:text-4xl font-black tracking-tight text-white">
+                    Turn Long Videos into <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-amber-400">Viral Short Clips</span>
+                </h1>
+                <p class="text-xs lg:text-sm text-slate-400">Paste your YouTube link below. Our AI scans speech cadence, extracts high-retention hooks, and overlays dynamic animated captions automatically.</p>
+            </div>
+
+            <!-- Core App Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+                <!-- Left Column: Input Form & Controls -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="bg-dark-card border border-dark-border rounded-2xl p-6 shadow-2xl space-y-6">
+
+                        <!-- YouTube Link Input -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">1. YouTube Video URL</label>
+                            <div class="relative">
+                                <input type="text" id="videoUrlInput" oninput="handleUrlInputChange()" placeholder="https://www.youtube.com/watch?v=..." value="https://www.youtube.com/watch?v=dQw4w9WgXcQ" class="w-full bg-dark-bg border border-dark-border focus:border-brand-500 rounded-xl pl-4 pr-16 py-3 text-sm text-white placeholder-slate-600 outline-none transition">
+                                <button onclick="clearInput()" class="absolute right-3 top-3 text-slate-500 hover:text-white text-xs font-semibold">Clear</button>
+                            </div>
+                        </div>
+
+                        <!-- Caption Style Options Selector -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">2. Caption Animation Preset</label>
+                                <span class="text-[11px] text-brand-500 font-semibold flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-ping"></span> Live Canvas Sync
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <button onclick="selectCaptionStyle('hormozi')" id="styleBtnHormozi" class="caption-style-card p-3 rounded-xl border-2 border-brand-500 bg-brand-500/10 text-left transition hover:border-brand-500">
+                                    <div class="text-xs font-extrabold text-white">🔥 Hormozi Bold</div>
+                                    <div class="text-[10px] text-slate-400 mt-1">Yellow/Green Pop</div>
+                                </button>
+                                <button onclick="selectCaptionStyle('karaoke')" id="styleBtnKaraoke" class="caption-style-card p-3 rounded-xl border border-dark-border bg-dark-subtle text-left transition hover:border-brand-500">
+                                    <div class="text-xs font-extrabold text-white">🎤 Karaoke Pop</div>
+                                    <div class="text-[10px] text-slate-400 mt-1">Word-by-word active</div>
+                                </button>
+                                <button onclick="selectCaptionStyle('minimal')" id="styleBtnMinimal" class="caption-style-card p-3 rounded-xl border border-dark-border bg-dark-subtle text-left transition hover:border-brand-500">
+                                    <div class="text-xs font-extrabold text-white">✨ Clean Sans</div>
+                                    <div class="text-[10px] text-slate-400 mt-1">Minimalist blurred bg</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Video Length & Aspect Ratio Grid -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Clip Target Length</label>
+                                <select id="clipLengthSelect" class="w-full bg-dark-bg border border-dark-border rounded-xl p-3 text-xs text-white outline-none focus:border-brand-500">
+                                    <option value="30">30 Seconds (Short Hooks)</option>
+                                    <option value="60" selected>60 Seconds (Standard Short)</option>
+                                    <option value="90">90 Seconds (Extended Story)</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Aspect Ratio</label>
+                                <select id="aspectRatioSelect" onchange="updateAspectPreview(this.value)" class="w-full bg-dark-bg border border-dark-border rounded-xl p-3 text-xs text-white outline-none focus:border-brand-500">
+                                    <option value="9:16" selected>9:16 Vertical (TikTok/Reels/Shorts)</option>
+                                    <option value="1:1">1:1 Square (Instagram Feed)</option>
+                                    <option value="16:9">16:9 Widescreen (YouTube)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- AI Toggles Grid -->
+                        <div class="space-y-2 pt-2 border-t border-dark-border">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">AI Processing Features</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center space-x-2.5 p-2.5 bg-dark-subtle border border-dark-border rounded-xl cursor-pointer hover:border-dark-borderHover transition">
+                                    <input type="checkbox" id="toggleBroll" checked class="w-4 h-4 accent-brand-500 rounded">
+                                    <span class="text-xs font-semibold text-slate-200">Auto AI B-Roll Overlays</span>
+                                </label>
+                                <label class="flex items-center space-x-2.5 p-2.5 bg-dark-subtle border border-dark-border rounded-xl cursor-pointer hover:border-dark-borderHover transition">
+                                    <input type="checkbox" id="toggleEmojis" checked class="w-4 h-4 accent-brand-500 rounded">
+                                    <span class="text-xs font-semibold text-slate-200">Animated Emoji Hooks</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Primary Action Button -->
+                        <button onclick="startClipGeneration()" class="w-full py-4 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-extrabold text-base rounded-xl transition shadow-xl shadow-brand-500/25 flex items-center justify-center space-x-2">
+                            <span>Get Viral Clips ⚡</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Column: Dynamic Live Preview Canvas -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="bg-dark-card border border-dark-border rounded-2xl p-5 shadow-2xl flex flex-col items-center">
+                        <div class="w-full flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Dynamic Caption Preview
+                            </span>
+                            <span class="text-[11px] bg-dark-subtle px-2.5 py-0.5 rounded text-slate-400 font-mono" id="previewAspectLabel">9:16 Vertical</span>
+                        </div>
+
+                        <!-- Live Aspect Frame Canvas -->
+                        <div id="previewContainer" class="relative w-full max-w-[280px] h-[460px] bg-black rounded-xl overflow-hidden border border-dark-border shadow-2xl transition-all duration-300 flex items-center justify-center">
+                            <!-- Background Thumbnail -->
+                            <img id="previewThumbnailImg" src="https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class="absolute inset-0 w-full h-full object-cover opacity-85" alt="Preview Video Thumbnail">
+                            
+                            <!-- B-Roll Badge -->
+                            <div class="absolute top-3 left-3 bg-black/80 backdrop-blur-md border border-brand-500/40 px-2 py-1 rounded-md flex items-center gap-1 text-[10px] font-bold text-brand-500">
+                                <span>🚀 AI B-Roll Active</span>
+                            </div>
+
+                            <!-- Virality Score Badge -->
+                            <div class="absolute top-3 right-3 bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[10px] font-black">
+                                Score: 98
+                            </div>
+
+                            <!-- Subtitle Overlay Box -->
+                            <div id="captionOverlayBox" class="absolute bottom-10 inset-x-3 text-center transition-all duration-300">
+                                <div id="previewCaptionText" class="caption-hormozi text-yellow-300 text-lg leading-tight drop-shadow-md">
+                                    THE SECRET TO <span class="text-emerald-400 font-black">GETTING RICH</span> IN 2026! 🚀
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="text-[11px] text-slate-500 text-center mt-3">Live canvas preview showing selected caption formatting and framing.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Multi-Stage Loading Progress Box -->
+            <div id="generationProgressBox" class="hidden bg-dark-card border border-brand-500/40 rounded-2xl p-6 text-center space-y-4 glow-orange">
+                <div class="flex items-center justify-center space-x-3">
+                    <svg class="animate-spin h-6 w-6 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="progressStatusText" class="text-base font-bold text-white">Scanning speech cadence & audio transcript...</span>
+                </div>
+                <div class="w-full max-w-md mx-auto bg-dark-bg rounded-full h-2 overflow-hidden border border-dark-border">
+                    <div id="progressBarFill" class="bg-gradient-to-r from-brand-500 to-amber-400 h-full w-0 transition-all duration-500"></div>
+                </div>
+            </div>
+
+            <!-- Generated Clips Results Grid -->
+            <div id="generatedClipsSection" class="hidden space-y-4 pt-6 border-t border-dark-border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-black text-white">🔥 Generated AI Viral Clips</h3>
+                        <p class="text-xs text-slate-400">Click Export to download your styled clip or open the Studio Editor to adjust wording.</p>
+                    </div>
+                    <button onclick="switchTab('library')" class="text-xs font-extrabold text-brand-500 hover:text-brand-600">View All in Library &rarr;</button>
+                </div>
+
+                <div id="generatedClipsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards populated via JavaScript -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= TAB 2: MY CLIPS LIBRARY ================= -->
+        <div id="libraryTab" class="hidden space-y-6">
+
+            <!-- Search & Filter Controls Bar -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-dark-card border border-dark-border p-6 rounded-2xl">
+                <div>
+                    <h2 class="text-2xl font-black text-white">Saved Clips Library</h2>
+                    <p class="text-xs text-slate-400">Manage, edit, or re-download your previously generated viral shorts.</p>
+                </div>
+
+                <!-- Search Input & Aspect Filter Dropdown -->
+                <div class="flex items-center gap-3">
+                    <input type="text" id="librarySearchInput" oninput="filterLibrary()" placeholder="Search clip titles..." class="bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-brand-500 w-48 sm:w-64">
+                    <select id="libraryFilterAspect" onchange="filterLibrary()" class="bg-dark-bg border border-dark-border rounded-xl p-2 text-xs text-white outline-none">
+                        <option value="ALL">All Ratios</option>
+                        <option value="9:16">9:16 Vertical</option>
+                        <option value="1:1">1:1 Square</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Saved Clips Gallery Grid -->
+            <div id="libraryClipsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamically populated from JS state -->
+            </div>
+
+            <!-- Empty State Fallback -->
+            <div id="emptyLibraryState" class="hidden text-center py-16 bg-dark-card border border-dark-border rounded-2xl space-y-3">
+                <div class="text-4xl">📂</div>
+                <h3 class="text-lg font-bold text-white">No Clips Found</h3>
+                <p class="text-xs text-slate-400 max-w-sm mx-auto">Generate new clips using the Clip Forge studio tab or adjust your search filter.</p>
+                <button onclick="switchTab('forge')" class="mt-2 px-4 py-2 bg-brand-500 text-white rounded-xl text-xs font-bold">Go to Clip Forge</button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- MODAL 1: INTERACTIVE CLIP STUDIO EDITOR -->
+    <div id="editStudioModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-card border border-dark-border rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative">
+            <div class="flex items-center justify-between border-b border-dark-border pb-3">
+                <h3 class="text-lg font-black text-white flex items-center gap-2">
+                    <span>⚙️ AI Clip Studio Editor</span>
+                </h3>
+                <button onclick="closeModal('editStudioModal')" class="text-slate-500 hover:text-white font-bold text-lg">&times;</button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Hook / Title</label>
+                    <input type="text" id="editModalTitle" class="w-full bg-dark-bg border border-dark-border rounded-xl p-2.5 text-xs text-white outline-none focus:border-brand-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">AI Transcript Caption Snippet</label>
+                    <textarea id="editModalTranscript" rows="3" class="w-full bg-dark-bg border border-dark-border rounded-xl p-2.5 text-xs text-white outline-none focus:border-brand-500"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Virality Hook Score</label>
+                        <input type="number" id="editModalScore" min="1" max="100" class="w-full bg-dark-bg border border-dark-border rounded-xl p-2.5 text-xs text-white outline-none focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Aspect Ratio</label>
+                        <select id="editModalAspect" class="w-full bg-dark-bg border border-dark-border rounded-xl p-2.5 text-xs text-white outline-none">
+                            <option value="9:16">9:16 Vertical</option>
+                            <option value="1:1">1:1 Square</option>
+                            <option value="16:9">16:9 Widescreen</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-3 border-t border-dark-border">
+                <button onclick="closeModal('editStudioModal')" class="px-4 py-2 rounded-xl bg-dark-subtle text-slate-300 hover:text-white text-xs font-bold">Cancel</button>
+                <button onclick="saveClipEdits()" class="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-extrabold shadow-lg shadow-brand-500/20">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: PRICING & UPGRADE TO PRO -->
+    <div id="pricingModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-card border border-dark-border rounded-2xl max-w-2xl w-full p-6 lg:p-8 space-y-6 shadow-2xl relative">
+            <button onclick="closeModal('pricingModal')" class="absolute top-4 right-4 text-slate-500 hover:text-white font-bold text-xl">&times;</button>
+
+            <div class="text-center space-y-2">
+                <span class="text-xs font-extrabold bg-brand-500/20 text-brand-500 px-3 py-1 rounded-full uppercase tracking-wider">Unlock Unlimited Short Clips</span>
+                <h2 class="text-2xl font-black text-white">Upgrade Your Creator Plan</h2>
+                <p class="text-xs text-slate-400">Join creators and channels growing 10x faster with AI automated repuporsing.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <!-- Starter Tier -->
+                <div class="bg-dark-bg border border-dark-border rounded-xl p-5 space-y-4 hover:border-slate-600 transition">
+                    <div class="space-y-1">
+                        <h4 class="text-sm font-extrabold text-slate-300">Starter Creator</h4>
+                        <div class="text-2xl font-black text-white">$15 <span class="text-xs font-normal text-slate-500">/ month</span></div>
+                    </div>
+                    <ul class="text-xs text-slate-400 space-y-2">
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> 30 Clips / Month</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> 1080p HD Exports</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Hormozi Caption Styles</li>
+                        <li class="flex items-center gap-2"><span class="text-slate-600">✗</span> Auto AI B-Roll Overlays</li>
+                    </ul>
+                    <button onclick="alert('Redirecting to Stripe Checkout for Starter Tier ($15/mo)...')" class="w-full py-2.5 bg-dark-subtle hover:bg-dark-border text-white text-xs font-bold rounded-lg border border-dark-border">Select Starter</button>
+                </div>
+
+                <!-- Pro Tier (Featured) -->
+                <div class="bg-gradient-to-b from-brand-500/10 to-transparent border-2 border-brand-500 rounded-xl p-5 space-y-4 relative shadow-xl shadow-brand-500/10">
+                    <span class="absolute -top-3 right-4 bg-brand-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">Most Popular</span>
+                    <div class="space-y-1">
+                        <h4 class="text-sm font-extrabold text-brand-500">Unlimited Pro</h4>
+                        <div class="text-2xl font-black text-white">$29 <span class="text-xs font-normal text-slate-500">/ month</span></div>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-2">
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> <strong>Unlimited</strong> AI Video Clips</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> 4K Ultra HD Exporting</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Auto AI B-Roll & Animated Emojis</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Priority Rendering Speed</li>
+                    </ul>
+                    <button onclick="alert('Redirecting to Stripe Checkout for Unlimited Pro ($29/mo)...')" class="w-full py-2.5 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white text-xs font-extrabold rounded-lg shadow-lg shadow-brand-500/25">Upgrade to Pro ⚡</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: BILLING & SUBSCRIPTION MODAL -->
+    <div id="billingModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-card border border-dark-border rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative">
+            <div class="flex items-center justify-between border-b border-dark-border pb-3">
+                <h3 class="text-lg font-black text-white">💳 Billing & Usage</h3>
+                <button onclick="closeModal('billingModal')" class="text-slate-500 hover:text-white font-bold text-lg">&times;</button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div class="bg-dark-subtle p-3.5 rounded-xl border border-dark-border space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Current Plan:</span>
+                        <span class="font-extrabold text-brand-500">Free Creator Trial</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Clips Remaining:</span>
+                        <span class="font-bold text-white"><span id="billingModalCredits">3</span> / 3</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Renewal Date:</span>
+                        <span class="text-slate-200">Nov 1, 2026</span>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-slate-400 font-bold uppercase text-[10px]">Payment Method</label>
+                    <div class="flex items-center justify-between p-3 bg-dark-bg border border-dark-border rounded-xl">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">💳</span>
+                            <span class="text-slate-200 font-mono">•••• •••• •••• 4242</span>
+                        </div>
+                        <span class="text-[10px] text-emerald-400 font-bold uppercase">Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeModal('billingModal'); openModal('pricingModal');" class="w-full py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-extrabold text-xs rounded-xl shadow-md">Upgrade Subscription</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPORT TOAST NOTIFICATION -->
+    <div id="exportToast" class="hidden fixed bottom-6 right-6 z-50 bg-dark-card border border-brand-500 text-white px-5 py-4 rounded-xl shadow-2xl flex items-center space-x-3 transition-all duration-300">
+        <div class="w-8 h-8 rounded-full bg-brand-500/20 text-brand-500 flex items-center justify-center font-bold">📥</div>
+        <div>
+            <div class="text-xs font-bold text-white" id="exportToastTitle">Exporting HD Clip...</div>
+            <div class="text-[11px] text-slate-400">Your video file download is starting now.</div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
+    <script>
+        // Global Application State
+        let currentCredits = 3;
+        let selectedCaptionStyle = 'hormozi';
+        let activeEditIndex = null;
+
+        // Saved Clips In-Memory Storage
+        let savedClips = [
+            {
+                id: 1,
+                title: "Part 1: The exact moment the argument shifted",
+                hookReason: "High emotional peak detected in audio transcript + fast pacing.",
+                score: 98,
+                aspectRatio: "9:16",
+                date: "Oct 10, 2026",
+                videoId: "dQw4w9WgXcQ",
+                captionStyle: "Hormozi Bold"
+            },
+            {
+                id: 2,
+                title: "Part 2: Bro revealed the entire secret strategy",
+                hookReason: "Clear value-drop pattern matched with strong audience retention.",
+                score: 94,
+                aspectRatio: "9:16",
+                date: "Oct 10, 2026",
+                videoId: "dQw4w9WgXcQ",
+                captionStyle: "Karaoke Pop"
+            },
+            {
+                id: 3,
+                title: "Part 3: Nobody expected this plot twist...",
+                hookReason: "Curiosity gap hook identified in first 3 seconds of segment.",
+                score: 89,
+                aspectRatio: "1:1",
+                date: "Oct 09, 2026",
+                videoId: "dQw4w9WgXcQ",
+                captionStyle: "Clean Sans"
+            }
+        ];
+
+        // On Page Load Initialization
+        window.onload = function() {
+            renderLibrary();
+        };
+
+        // Tab Navigation
+        function switchTab(tabName) {
+            const forgeTab = document.getElementById('forgeTab');
+            const libraryTab = document.getElementById('libraryTab');
+            const tabBtnForge = document.getElementById('tabBtnForge');
+            const tabBtnLibrary = document.getElementById('tabBtnLibrary');
+
+            if (tabName === 'forge') {
+                forgeTab.classList.remove('hidden');
+                libraryTab.classList.add('hidden');
+                tabBtnForge.className = "px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-brand-500 text-white shadow-md";
+                tabBtnLibrary.className = "px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all text-slate-400 hover:text-white hover:bg-dark-subtle flex items-center gap-1.5";
+            } else {
+                forgeTab.classList.add('hidden');
+                libraryTab.classList.remove('hidden');
+                tabBtnLibrary.className = "px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-brand-500 text-white shadow-md flex items-center gap-1.5";
+                tabBtnForge.className = "px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all text-slate-400 hover:text-white hover:bg-dark-subtle";
+                renderLibrary();
+            }
+        }
+
+        // Live Caption Preset Switcher
+        function selectCaptionStyle(style) {
+            selectedCaptionStyle = style;
+            const captionBox = document.getElementById('previewCaptionText');
+
+            document.querySelectorAll('.caption-style-card').forEach(card => {
+                card.className = "caption-style-card p-3 rounded-xl border border-dark-border bg-dark-subtle text-left transition hover:border-brand-500";
+            });
+
+            if (style === 'hormozi') {
+                document.getElementById('styleBtnHormozi').className = "caption-style-card p-3 rounded-xl border-2 border-brand-500 bg-brand-500/10 text-left transition hover:border-brand-500";
+                captionBox.className = "caption-hormozi text-yellow-300 text-lg leading-tight drop-shadow-md";
+                captionBox.innerHTML = 'THE SECRET TO <span class="text-emerald-400 font-black">GETTING RICH</span> IN 2026! 🚀';
+            } else if (style === 'karaoke') {
+                document.getElementById('styleBtnKaraoke').className = "caption-style-card p-3 rounded-xl border-2 border-brand-500 bg-brand-500/10 text-left transition hover:border-brand-500";
+                captionBox.className = "caption-karaoke text-white font-black text-base drop-shadow-md space-x-1";
+                captionBox.innerHTML = '<span>The</span> <span>secret</span> <span class="highlight">strategy</span> <span>revealed!</span>';
+            } else if (style === 'minimal') {
+                document.getElementById('styleBtnMinimal').className = "caption-style-card p-3 rounded-xl border-2 border-brand-500 bg-brand-500/10 text-left transition hover:border-brand-500";
+                captionBox.className = "caption-minimal text-white font-semibold text-xs tracking-wide";
+                captionBox.innerHTML = '"Nobody expected this plot twist in the podcast..."';
+            }
+        }
+
+        // Live Aspect Ratio Preview Frame Adjuster
+        function updateAspectPreview(aspect) {
+            const container = document.getElementById('previewContainer');
+            const aspectLabel = document.getElementById('previewAspectLabel');
+            aspectLabel.innerText = `${aspect} Ratio`;
+
+            if (aspect === '9:16') {
+                container.style.maxWidth = "280px";
+                container.style.height = "460px";
+            } else if (aspect === '1:1') {
+                container.style.maxWidth = "360px";
+                container.style.height = "360px";
+            } else if (aspect === '16:9') {
+                container.style.maxWidth = "420px";
+                container.style.height = "240px";
+            }
+        }
+
+        // Extract YouTube ID & Update Live Thumbnail
+        function parseYouTubeId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : "dQw4w9WgXcQ";
+        }
+
+        function handleUrlInputChange() {
+            const inputVal = document.getElementById('videoUrlInput').value.trim();
+            const videoId = parseYouTubeId(inputVal);
+            document.getElementById('previewThumbnailImg').src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        }
+
+        function clearInput() {
+            document.getElementById('videoUrlInput').value = "";
+        }
+
+        // Profile Dropdown Toggle
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Start Processing & Forging Video Clips
+        function startClipGeneration() {
+            if (currentCredits <= 0) {
+                openModal('pricingModal');
+                return;
+            }
+
+            const urlVal = document.getElementById('videoUrlInput').value.trim();
+            if (!urlVal) {
+                alert("Please paste a valid YouTube video URL!");
+                return;
+            }
+
+            const videoId = parseYouTubeId(urlVal);
+
+            // Deduct Free Credits
+            currentCredits--;
+            document.getElementById('headerCreditsCount').innerText = currentCredits;
+            document.getElementById('billingModalCredits').innerText = currentCredits;
+            document.getElementById('creditMeterBar').style.width = `${(currentCredits / 3) * 100}%`;
+
+            // UI Element References
+            const progressBox = document.getElementById('generationProgressBox');
+            const progressText = document.getElementById('progressStatusText');
+            const progressBar = document.getElementById('progressBarFill');
+            const resultsSection = document.getElementById('generatedClipsSection');
+
+            resultsSection.classList.add('hidden');
+            progressBox.classList.remove('hidden');
+
+            // Multi-Stage Processing Simulation
+            progressBar.style.width = "25%";
+            progressText.innerText = "⏳ Scanning speech cadence & extracting transcript...";
+
+            setTimeout(() => {
+                progressBar.style.width = "65%";
+                progressText.innerText = "🎯 Identifying viral retention hooks & emotional peaks...";
+            }, 1800);
+
+            setTimeout(() => {
+                progressBar.style.width = "90%";
+                progressText.innerText = "🎨 Overlaying animated captions & AI B-roll clips...";
+            }, 3200);
+
+            setTimeout(() => {
+                progressBar.style.width = "100%";
+                progressBox.classList.add('hidden');
+                resultsSection.classList.remove('hidden');
+
+                const chosenAspect = document.getElementById('aspectRatioSelect').value;
+
+                // Generated Output Data
+                const newClips = [
+                    {
+                        id: Date.now() + 1,
+                        title: "Part 1: The key revelation everyone missed",
+                        hookReason: "Highest engagement probability identified in audio transcript.",
+                        score: 99,
+                        aspectRatio: chosenAspect,
+                        date: "Just Now",
+                        videoId: videoId,
+                        captionStyle: selectedCaptionStyle
+                    },
+                    {
+                        id: Date.now() + 2,
+                        title: "Part 2: Why this method changes everything",
+                        hookReason: "Pacing pattern matched top 1% trending Shorts.",
+                        score: 95,
+                        aspectRatio: chosenAspect,
+                        date: "Just Now",
+                        videoId: videoId,
+                        captionStyle: selectedCaptionStyle
+                    },
+                    {
+                        id: Date.now() + 3,
+                        title: "Part 3: The shocking conclusion to the test",
+                        hookReason: "Strong curiosity gap hook detected in speech.",
+                        score: 91,
+                        aspectRatio: chosenAspect,
+                        date: "Just Now",
+                        videoId: videoId,
+                        captionStyle: selectedCaptionStyle
+                    }
+                ];
+
+                const container = document.getElementById('generatedClipsContainer');
+                container.innerHTML = "";
+
+                newClips.forEach(clip => {
+                    savedClips.unshift(clip);
+                    container.appendChild(createClipCardHTML(clip));
+                });
+
+                document.getElementById('libraryBadge').innerText = savedClips.length;
+
+            }, 4500);
+        }
+
+        // HTML Card Renderer Component
+        function createClipCardHTML(clip) {
+            const card = document.createElement('div');
+            card.className = "bg-dark-card border border-dark-border rounded-xl p-4 flex flex-col justify-between hover:border-brand-500/50 transition shadow-xl";
+            const thumbUrl = `https://img.youtube.com/vi/${clip.videoId}/hqdefault.jpg`;
+
+            card.innerHTML = `
+                <div>
+                    <div class="relative w-full h-36 rounded-lg overflow-hidden bg-cover bg-center border border-dark-border mb-3" style="background-image: url('${thumbUrl}');">
+                        <div class="absolute top-2 left-2 bg-black/80 border border-brand-500/40 text-brand-500 text-[10px] font-black px-2 py-0.5 rounded-full">
+                            Score: ${clip.score}/100
+                        </div>
+                        <div class="absolute bottom-2 right-2 bg-black/80 text-slate-300 text-[10px] font-mono px-2 py-0.5 rounded">
+                            ${clip.aspectRatio}
+                        </div>
+                    </div>
+                    <h4 class="text-xs font-extrabold text-white leading-snug mb-1 line-clamp-2" id="cardTitle_${clip.id}">${clip.title}</h4>
+                    <p class="text-[11px] text-slate-400 mb-3 leading-relaxed"><b>AI Hook Analysis:</b> ${clip.hookReason}</p>
+                </div>
+                <div class="flex gap-2 pt-2 border-t border-dark-border">
+                    <button onclick="openEditStudioModal(${clip.id})" class="flex-1 py-1.5 bg-dark-subtle hover:bg-dark-border text-slate-200 text-xs font-bold rounded-lg border border-dark-border transition">Edit Studio</button>
+                    <button onclick="triggerExportDownload('${clip.title}')" class="flex-1 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-extrabold rounded-lg shadow-md transition">Export 📥</button>
+                </div>
+            `;
+            return card;
+        }
+
+        // Render Saved Clips Gallery
+        function renderLibrary() {
+            const grid = document.getElementById('libraryClipsGrid');
+            const emptyState = document.getElementById('emptyLibraryState');
+            const searchVal = document.getElementById('librarySearchInput')?.value.toLowerCase() || "";
+            const aspectVal = document.getElementById('libraryFilterAspect')?.value || "ALL";
+
+            grid.innerHTML = "";
+
+            const filtered = savedClips.filter(c => {
+                const matchesSearch = c.title.toLowerCase().includes(searchVal);
+                const matchesAspect = aspectVal === "ALL" || c.aspectRatio === aspectVal;
+                return matchesSearch && matchesAspect;
+            });
+
+            document.getElementById('libraryBadge').innerText = savedClips.length;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filtered.forEach(clip => {
+                    grid.appendChild(createClipCardHTML(clip));
+                });
+            }
+        }
+
+        function filterLibrary() {
+            renderLibrary();
+        }
+
+        // Studio Editor Modal Handlers
+        function openEditStudioModal(clipId) {
+            activeEditIndex = savedClips.findIndex(c => c.id === clipId);
+            if (activeEditIndex === -1) return;
+
+            const clip = savedClips[activeEditIndex];
+            document.getElementById('editModalTitle').value = clip.title;
+            document.getElementById('editModalTranscript').value = clip.hookReason;
+            document.getElementById('editModalScore').value = clip.score;
+            document.getElementById('editModalAspect').value = clip.aspectRatio;
+
+            openModal('editStudioModal');
+        }
+
+        function saveClipEdits() {
+            if (activeEditIndex !== null && savedClips[activeEditIndex]) {
+                savedClips[activeEditIndex].title = document.getElementById('editModalTitle').value;
+                savedClips[activeEditIndex].hookReason = document.getElementById('editModalTranscript').value;
+                savedClips[activeEditIndex].score = parseInt(document.getElementById('editModalScore').value) || 90;
+                savedClips[activeEditIndex].aspectRatio = document.getElementById('editModalAspect').value;
+
+                renderLibrary();
+                const cardTitle = document.getElementById(`cardTitle_${savedClips[activeEditIndex].id}`);
+                if (cardTitle) cardTitle.innerText = savedClips[activeEditIndex].title;
+            }
+            closeModal('editStudioModal');
+        }
+
+        // Modal Controls
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // Simulated Download Trigger
+        function triggerExportDownload(title) {
+            const toast = document.getElementById('exportToast');
+            const toastTitle = document.getElementById('exportToastTitle');
+            toastTitle.innerText = `Exporting: ${title.substring(0, 25)}...`;
+
+            toast.classList.remove('hidden');
+
+            const link = document.createElement('a');
+            link.href = "https://www.w3schools.com/html/mov_bbb.mp4";
+            link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`;
+            link.target = "_blank";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
